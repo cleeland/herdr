@@ -97,6 +97,52 @@ Every binding is configurable, including the prefix itself:
 prefix = "ctrl+a"
 ```
 
+## Coming from tmux
+
+Herdr's workspaces, tabs, and panes line up with tmux sessions, windows, and panes. The snippet below remaps the default keys to their tmux equivalents. It leaves `prefix` alone, so keep `ctrl+b` or set the one you already use.
+
+```toml
+[keys]
+detach = "prefix+d"
+workspace_picker = "prefix+s"           # choose-tree -s
+goto = ["prefix+w", "prefix+f"]         # choose-tree -w, find-window
+previous_workspace = "prefix+("
+next_workspace = "prefix+)"
+rename_workspace = "prefix+$"
+rename_tab = "prefix+comma"
+close_tab = "prefix+ampersand"          # kill-window
+split_vertical = "prefix+percent"       # split-window -h
+split_horizontal = "prefix+double_quote" # split-window
+focus_pane_left = "prefix+left"
+focus_pane_down = "prefix+down"
+focus_pane_up = "prefix+up"
+focus_pane_right = "prefix+right"
+cycle_pane_next = "prefix+o"
+last_pane = "prefix+semicolon"
+next_tab = ["prefix+n", "prefix+ctrl+n"]
+previous_tab = ["prefix+p", "prefix+ctrl+p"]
+
+# Herdr defaults that collide with a different tmux key move out of the way.
+settings = "prefix+shift+c"             # tmux C is customize-mode
+close_workspace = "prefix+shift+x"      # tmux D is only a client chooser
+open_notification_target = "prefix+shift+o"
+
+[ui]
+copy_mode_keys = "emacs"                # tmux mode-keys emacs; the default is vi
+```
+
+`c`, `n`, `p`, `1`..`9`, `x`, `z`, `[`, `?`, and `R` already match tmux.
+
+A few things are deliberately not mapped, because the models differ:
+
+- `{` and `}` swap a pane with the previous or next one in order. Herdr swaps directionally (`prefix+shift+h/j/k/l`), so no alias is provided.
+- `last_pane` jumps back across workspaces and tabs, not only within the current tab as tmux's `;` does.
+- Herdr numbers tabs from 1 and has no "last tab" action, so tmux's `0` and `l` have no counterpart.
+- Herdr has no preset layouts, `break-pane`, or command prompt.
+- `prefix+r` enters a resize mode instead of tmux's repeatable `ctrl+arrow` keys. See [Configuration](/docs/configuration/#keybindings) for direct resize bindings.
+
+With `copy_mode_keys = "emacs"`, copy mode follows tmux's emacs table: `ctrl+space` starts a selection, `alt+w` or `ctrl+w` copies, `ctrl+f/b/n/p` and `alt+f/b` move, `alt+v` and `ctrl+v` page, `alt+<` and `alt+>` jump to the ends of the history, `ctrl+s` and `ctrl+r` search, and `ctrl+g` clears the selection. `alt` keys need your terminal to send Option as Meta.
+
 ## Going prefix-free
 
 You can bind Herdr actions to direct chords that need no prefix at all. The hard part is knowing which chords are safe, because terminals, shells, and desktop environments already own most of the keyboard.
