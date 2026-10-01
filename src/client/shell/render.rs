@@ -36,6 +36,7 @@ pub(super) fn render_mode_bar(
     endpoint_error: Option<&str>,
     update_available: bool,
     keybinds: &LiveKeybindConfig,
+    copy_mode_keys: crate::config::CopyModeKeysConfig,
     palette: &Palette,
 ) -> Option<Rect> {
     if (mode == ClientShellMode::Terminal && endpoint_error.is_none()) || pane_area.is_empty() {
@@ -175,22 +176,47 @@ pub(super) fn render_mode_bar(
                         } else {
                             ("esc", " clear  q exit")
                         };
-                    segments.extend([
-                        (" COPY ".to_owned(), mode_style),
-                        (" ".to_owned(), base),
-                        ("h/j/k/l w/b/e { }".to_owned(), key),
-                        (" move  ".to_owned(), base),
-                        ("/ ?".to_owned(), key),
-                        (" search  ".to_owned(), base),
-                        ("n/N".to_owned(), key),
-                        (format!(" repeat{match_status}  "), base),
-                        ("v/space".to_owned(), key),
-                        (format!(" {select}  "), base),
-                        ("y/enter".to_owned(), key),
-                        (" copy  ".to_owned(), base),
-                        (exit_keys.to_owned(), key),
-                        (exit_label.to_owned(), base),
-                    ]);
+                    if copy_mode_keys == crate::config::CopyModeKeysConfig::Emacs {
+                        let (exit_keys, exit_label) =
+                            if copy_mode.search_query.is_empty() && copy_mode.selection.is_none() {
+                                ("q/esc", " exit")
+                            } else {
+                                ("C-g/esc", " clear  q exit")
+                            };
+                        segments.extend([
+                            (" COPY ".to_owned(), mode_style),
+                            (" ".to_owned(), base),
+                            ("C-f/b/n/p M-f/b M-v/C-v".to_owned(), key),
+                            (" move  ".to_owned(), base),
+                            ("C-s/C-r".to_owned(), key),
+                            (" search  ".to_owned(), base),
+                            ("n/N".to_owned(), key),
+                            (format!(" repeat{match_status}  "), base),
+                            ("C-space".to_owned(), key),
+                            (format!(" {select}  "), base),
+                            ("M-w/enter".to_owned(), key),
+                            (" copy  ".to_owned(), base),
+                            (exit_keys.to_owned(), key),
+                            (exit_label.to_owned(), base),
+                        ]);
+                    } else {
+                        segments.extend([
+                            (" COPY ".to_owned(), mode_style),
+                            (" ".to_owned(), base),
+                            ("h/j/k/l w/b/e { }".to_owned(), key),
+                            (" move  ".to_owned(), base),
+                            ("/ ?".to_owned(), key),
+                            (" search  ".to_owned(), base),
+                            ("n/N".to_owned(), key),
+                            (format!(" repeat{match_status}  "), base),
+                            ("v/space".to_owned(), key),
+                            (format!(" {select}  "), base),
+                            ("y/enter".to_owned(), key),
+                            (" copy  ".to_owned(), base),
+                            (exit_keys.to_owned(), key),
+                            (exit_label.to_owned(), base),
+                        ]);
+                    }
                 }
             }
             ClientShellMode::Terminal => unreachable!(),

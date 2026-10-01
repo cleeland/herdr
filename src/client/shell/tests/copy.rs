@@ -2308,3 +2308,69 @@ fn copy_mode_repeat_during_projection_gap_stays_active() {
         );
     }
 }
+
+#[test]
+fn emacs_copy_mode_keys_page_select_and_leave_vi_keys_inert() {
+    let mut config = Config::default();
+    config.ui.copy_on_select = false;
+    config.ui.copy_mode_keys = crate::config::CopyModeKeysConfig::Emacs;
+    let mut state = ClientShellState::new(ClientShellConfig::from_config(&config));
+    state.set_snapshot(Box::new(snapshot()));
+    let mut pane_surface = surface();
+    pane_surface.panes[0].scroll = Some(crate::protocol::PaneSurfaceScrollMetrics {
+        offset_from_bottom: 0,
+        max_offset_from_bottom: 20,
+        viewport_rows: 2,
+    });
+    state.set_pane_surface(pane_surface);
+    state.compose(106, 20).expect("composed frame");
+
+    let mut enter = ClientShellInput::default();
+    state.record_binding(
+        crate::input::KeybindMatch::Action(crate::input::KeybindAction::CopyMode),
+        &mut enter,
+    );
+    assert_eq!(state.mode, ClientShellMode::Copy);
+    let cursor_row = |state: &ClientShellState| state.copy_mode.as_ref().map(|m| m.cursor.row);
+    assert_eq!(cursor_row(&state), Some(21));
+
+    let press = |state: &mut ClientShellState, code: KeyCode, modifiers: KeyModifiers| {
+        state.handle_raw_events(vec![RawInputEvent::Key(crate::input::TerminalKey::new(
+            code, modifiers,
+        ))])
+    };
+
+    // vi motions do nothing in emacs mode
+    press(&mut state, KeyCode::Char('k'), KeyModifiers::empty());
+    assert_eq!(cursor_row(&state), Some(21));
+
+    // M-v pages backwards, matching tmux emacs copy mode
+    let page = press(&mut state, KeyCode::Char('v'), KeyModifiers::ALT);
+    assert_eq!(cursor_row(&state), Some(20));
+    assert!(matches!(
+        &page.actions[..],
+        [ClientShellAction::Endpoint { request, .. }]
+            if matches!(
+                &request.method,
+                crate::api::schema::Method::PaneScroll(params)
+                    if params.offset_from_bottom == 1
+            )
+    ));
+
+    // C-p moves up a line, C-n moves back down
+    press(&mut state, KeyCode::Char('p'), KeyModifiers::CONTROL);
+    assert_eq!(cursor_row(&state), Some(19));
+    press(&mut state, KeyCode::Char('n'), KeyModifiers::CONTROL);
+    assert_eq!(cursor_row(&state), Some(20));
+
+    // C-Space starts a selection, C-g clears it
+    press(&mut state, KeyCode::Char(' '), KeyModifiers::CONTROL);
+    assert!(state.copy_mode.as_ref().unwrap().selection.is_some());
+    press(&mut state, KeyCode::Char('g'), KeyModifiers::CONTROL);
+    assert!(state.copy_mode.as_ref().unwrap().selection.is_none());
+    assert_eq!(state.mode, ClientShellMode::Copy);
+
+    // q leaves copy mode
+    press(&mut state, KeyCode::Char('q'), KeyModifiers::empty());
+    assert_ne!(state.mode, ClientShellMode::Copy);
+}

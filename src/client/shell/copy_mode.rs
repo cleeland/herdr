@@ -179,6 +179,11 @@ impl ClientShellState {
             _ => {}
         }
 
+        if self.config.copy_mode_keys == crate::config::CopyModeKeysConfig::Emacs {
+            self.route_copy_emacs_key(key, outcome);
+            return;
+        }
+
         match (key.code, key.modifiers) {
             (KeyCode::Char('b'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
                 self.move_copy_page(-1, false, outcome);
@@ -258,6 +263,61 @@ impl ClientShellState {
                 self.request_copy_motion(crate::api::schema::PaneCopyMotion::NextParagraph, outcome)
             }
             _ => return,
+        }
+        outcome.repaint = true;
+    }
+
+    fn route_copy_emacs_key(
+        &mut self,
+        key: &crate::input::TerminalKey,
+        outcome: &mut ClientShellInput,
+    ) {
+        use crate::api::schema::{PaneCopyMotion, PaneCopySearchDirection};
+        use crate::copy_mode::EmacsCopyCommand as C;
+
+        let Some(command) = crate::copy_mode::copy_mode_emacs_command(key) else {
+            return;
+        };
+        match command {
+            C::Cancel => self.exit_copy_mode(false, outcome),
+            C::ClearSelection => {
+                if let Some(copy_mode) = self.copy_mode.as_mut() {
+                    copy_mode.selection = None;
+                }
+                self.selection = None;
+            }
+            C::BeginSelection => self.begin_copy_selection(false),
+            C::CopyAndExit => {
+                if !self.defer_copy_until_search_result() {
+                    self.exit_copy_mode(true, outcome);
+                }
+            }
+            C::CursorLeft => self.move_copy_cursor(0, -1, outcome),
+            C::CursorRight => self.move_copy_cursor(0, 1, outcome),
+            C::CursorUp => self.move_copy_cursor(-1, 0, outcome),
+            C::CursorDown => self.move_copy_cursor(1, 0, outcome),
+            C::LineStart => {
+                self.set_copy_cursor_col(0);
+                self.sync_copy_selection();
+            }
+            C::LineEnd => self.request_copy_motion(PaneCopyMotion::LineEnd, outcome),
+            C::FirstNonBlank => self.request_copy_motion(PaneCopyMotion::FirstNonBlank, outcome),
+            C::NextWordEnd => self.request_copy_motion(PaneCopyMotion::NextWordEnd, outcome),
+            C::PreviousWordStart => {
+                self.request_copy_motion(PaneCopyMotion::PreviousWordStart, outcome)
+            }
+            C::PreviousParagraph => {
+                self.request_copy_motion(PaneCopyMotion::PreviousParagraph, outcome)
+            }
+            C::NextParagraph => self.request_copy_motion(PaneCopyMotion::NextParagraph, outcome),
+            C::PageUp => self.move_copy_page(-1, false, outcome),
+            C::PageDown => self.move_copy_page(1, false, outcome),
+            C::HistoryTop => self.move_copy_history(true, outcome),
+            C::HistoryBottom => self.move_copy_history(false, outcome),
+            C::SearchForward => self.open_copy_search(PaneCopySearchDirection::Forward),
+            C::SearchBackward => self.open_copy_search(PaneCopySearchDirection::Backward),
+            C::SearchAgain => self.repeat_copy_search(false, outcome),
+            C::SearchReverse => self.repeat_copy_search(true, outcome),
         }
         outcome.repaint = true;
     }

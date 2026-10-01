@@ -142,6 +142,15 @@ pub enum SidebarCollapsedModeConfig {
     Hidden,
 }
 
+/// Key bindings used inside copy mode, like tmux's `mode-keys`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CopyModeKeysConfig {
+    #[default]
+    Vi,
+    Emacs,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RightClickPassthroughModifierConfig(Option<KeyModifiers>);
 
@@ -952,6 +961,8 @@ pub struct UiConfig {
     pub mouse_capture: bool,
     /// Copy text selected with the mouse. Default: true.
     pub copy_on_select: bool,
+    /// Key bindings used in copy mode: vi or emacs. Default: vi.
+    pub copy_mode_keys: CopyModeKeysConfig,
     /// Host cursor policy. Default: auto.
     pub host_cursor: HostCursorModeConfig,
     /// Modifier that lets right-click gestures pass through to pane apps. Empty disables it.
@@ -1203,6 +1214,7 @@ impl Default for UiConfig {
             mobile_width_threshold: DEFAULT_MOBILE_WIDTH_THRESHOLD,
             mouse_capture: true,
             copy_on_select: true,
+            copy_mode_keys: CopyModeKeysConfig::Vi,
             host_cursor: HostCursorModeConfig::Auto,
             right_click_passthrough_modifier: RightClickPassthroughModifierConfig::default(),
             redraw_on_focus_gained: true,
@@ -1753,6 +1765,18 @@ copy_on_select = false
 "#;
         let config: Config = toml::from_str(toml).unwrap();
         assert!(!config.ui.copy_on_select);
+    }
+
+    #[test]
+    fn copy_mode_keys_default_vi_and_parse_emacs() {
+        assert_eq!(Config::default().ui.copy_mode_keys, CopyModeKeysConfig::Vi);
+
+        let toml = r#"
+[ui]
+copy_mode_keys = "emacs"
+"#;
+        let config: Config = toml::from_str(toml).unwrap();
+        assert_eq!(config.ui.copy_mode_keys, CopyModeKeysConfig::Emacs);
     }
 
     #[test]

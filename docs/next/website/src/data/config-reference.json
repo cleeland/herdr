@@ -912,6 +912,16 @@
           "description": "Automatically copy text selected by mouse drag or double-click. When disabled, Ctrl+C or a host-forwarded Cmd+C copies and clears the retained selection."
         },
         {
+          "key": "ui.copy_mode_keys",
+          "type": "enum",
+          "default": "vi",
+          "description": "Key bindings used in copy mode, like tmux's mode-keys. emacs follows tmux's emacs copy table.",
+          "values": [
+            "vi",
+            "emacs"
+          ]
+        },
+        {
           "key": "ui.host_cursor",
           "type": "enum",
           "default": "auto",

@@ -259,6 +259,11 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
 # or Cmd+C when the host forwards it, copies and clears it.
 # copy_on_select = true
 
+# Key bindings inside copy mode (prefix+[): "vi" or "emacs".
+# emacs follows tmux's emacs copy table: C-Space select, M-w/C-w copy,
+# C-f/C-b/C-n/C-p move, C-v/M-v page, M-f/M-b word, C-s/C-r search.
+# copy_mode_keys = "vi"
+
 # Host cursor policy: "auto", "native", or "drawn".
 # "auto" draws Herdr's own cursor on native Windows builds and WSL to avoid ConPTY cursor flicker, and uses the native terminal cursor elsewhere.
 # "native" always uses the outer terminal cursor. "drawn" always draws Herdr's cursor as terminal cell content.

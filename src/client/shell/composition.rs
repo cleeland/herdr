@@ -133,6 +133,7 @@ impl ClientShellState {
             self.endpoint_error.as_deref(),
             false,
             &self.config.keybinds,
+            self.config.copy_mode_keys,
             &self.config.palette,
         );
         if let Some(notice) = &self.visible_endpoint_notice {
@@ -329,6 +330,7 @@ impl ClientShellState {
                 self.endpoint_error.as_deref(),
                 snapshot.update_available.is_some(),
                 &self.config.keybinds,
+                self.config.copy_mode_keys,
                 &self.config.palette,
             )
         };
